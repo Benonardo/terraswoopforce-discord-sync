@@ -1,38 +1,34 @@
 {
   "schemaVersion": 1,
-  "id": "modid",
+  "id": "tsfdiscordsync",
   "version": "${version}",
 
-  "name": "Example Mod",
-  "description": "This is an example description! Tell everyone what your mod is about!",
+  "name": "TerraSwoopForce Discord Synchronisation",
+  "description": "Posts a leaderboard in a discord channel",
   "authors": [
-    "Me!"
+    "Benonardo"
   ],
   "contact": {
-    "homepage": "https://fabricmc.net/",
-    "sources": "https://github.com/FabricMC/fabric-example-mod"
+    "sources": "https://github.com/Benonardo/terraswoopforce-discord-sync"
   },
 
-  "license": "CC0-1.0",
+  "license": "MIT",
   "icon": "assets/modid/icon.png",
 
-  "environment": "*",
+  "environment": "server",
   "entrypoints": {
-    "main": [
-      "net.fabricmc.example.ExampleMod"
+    "server": [
+      "com.benonardo.tsfdiscordsync.TSFDiscordSync"
     ]
   },
   "mixins": [
-    "modid.mixins.json"
+    "tsfdiscordsync.mixins.json"
   ],
 
   "depends": {
     "fabricloader": ">=0.14.19",
-    "fabric-api": "*",
-    "minecraft": "~1.19.4",
+    "fabric": "*",
+    "minecraft": "~1.16.4",
     "java": ">=17"
-  },
-  "suggests": {
-    "another-mod": "*"
   }
 }
