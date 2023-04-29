@@ -15,6 +15,7 @@ public class UpdateLeaderboardCommand {
     }
 
     private static int execute(CommandContext<ServerCommandSource> context) {
+        TSFDiscordSync.reloadConfig();
         TSFDiscordSync.updateMessage(context.getSource().getMinecraftServer().getScoreboard());
 
         return 1;

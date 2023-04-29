@@ -8,19 +8,14 @@ import net.minecraft.scoreboard.Scoreboard;
 import net.minecraft.scoreboard.ScoreboardPlayerScore;
 import net.minecraft.server.MinecraftServer;
 
-import javax.net.ssl.HttpsURLConnection;
-import java.io.*;
-import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.net.HttpURLConnection;
+import java.io.FileReader;
+import java.io.IOException;
 import java.net.URI;
-import java.net.URL;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Comparator;
+import java.util.Properties;
 
 public class TSFDiscordSync implements DedicatedServerModInitializer {
 
@@ -28,23 +23,29 @@ public class TSFDiscordSync implements DedicatedServerModInitializer {
 
     public static String webhookURL;
     public static String messageID;
+    public static int leaderboardCount;
 
     @Override
     public void onInitializeServer() {
-        try (FileReader reader = new FileReader(FabricLoader.getInstance().getConfigDir().resolve("tsfdiscordsync.properties").toFile())) {
-            var properties = new Properties();
-            properties.load(reader);
-            webhookURL = properties.getProperty("webhook_url");
-            messageID = properties.getProperty("message_id");
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        reloadConfig();
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> TSFDiscordSync.server = server);
 
         CommandRegistrationCallback.EVENT.register((dispatcher, dedicated) -> {
            UpdateLeaderboardCommand.register(dispatcher);
         });
+    }
+
+    public static void reloadConfig() {
+        try (FileReader reader = new FileReader(FabricLoader.getInstance().getConfigDir().resolve("tsfdiscordsync.properties").toFile())) {
+            var properties = new Properties();
+            properties.load(reader);
+            webhookURL = properties.getProperty("webhook_url");
+            messageID = properties.getProperty("message_id");
+            leaderboardCount = Integer.parseInt(properties.getProperty("leaderboard_count", "3"));
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static void updateMessage(Scoreboard scoreboard) {
@@ -102,38 +103,37 @@ public class TSFDiscordSync implements DedicatedServerModInitializer {
     }
 
     private static String getMessage(Scoreboard scoreboard) {
-        List<ScoreboardPlayerScore> tunnel1Scores = new ArrayList<>(scoreboard.getAllPlayerScores(scoreboard.getObjective("tunnel1_best")));
-        List<ScoreboardPlayerScore> tunnel2Scores = new ArrayList<>(scoreboard.getAllPlayerScores(scoreboard.getObjective("tunnel2_best")));
-        List<ScoreboardPlayerScore> tunnel3Scores = new ArrayList<>(scoreboard.getAllPlayerScores(scoreboard.getObjective("tunnel3_best")));
-        List<ScoreboardPlayerScore> tunnel4Scores = new ArrayList<>(scoreboard.getAllPlayerScores(scoreboard.getObjective("tunnel4_best")));
-        List<ScoreboardPlayerScore> tunnelallScores = new ArrayList<>(scoreboard.getAllPlayerScores(scoreboard.getObjective("tunnelall_best")));
-
+        var tunnel1Scores = scoreboard.getAllPlayerScores(scoreboard.getObjective("tunnel1_best")).stream().filter(score -> score.getScore() != 0 && !score.getPlayerName().equals("$par")).sorted(Comparator.comparingInt(ScoreboardPlayerScore::getScore)).limit(leaderboardCount).toList();
+        var tunnel2Scores = scoreboard.getAllPlayerScores(scoreboard.getObjective("tunnel2_best")).stream().filter(score -> score.getScore() != 0 && !score.getPlayerName().equals("$par")).sorted(Comparator.comparingInt(ScoreboardPlayerScore::getScore)).limit(leaderboardCount).toList();
+        var tunnel3Scores = scoreboard.getAllPlayerScores(scoreboard.getObjective("tunnel3_best")).stream().filter(score -> score.getScore() != 0 && !score.getPlayerName().equals("$par")).sorted(Comparator.comparingInt(ScoreboardPlayerScore::getScore)).limit(leaderboardCount).toList();
+        var tunnel4Scores = scoreboard.getAllPlayerScores(scoreboard.getObjective("tunnel4_best")).stream().filter(score -> score.getScore() != 0 && !score.getPlayerName().equals("$par")).sorted(Comparator.comparingInt(ScoreboardPlayerScore::getScore)).limit(leaderboardCount).toList();
+        var tunnelallScores = scoreboard.getAllPlayerScores(scoreboard.getObjective("tunnelall_best")).stream().filter(score -> score.getScore() != 0 && !score.getPlayerName().equals("$par")).sorted(Comparator.comparingInt(ScoreboardPlayerScore::getScore)).limit(leaderboardCount).toList();
         StringBuilder builder = new StringBuilder();
         builder.append("**Tunnel 1 Scores**\\n");
-        tunnel1Scores = tunnel1Scores.stream().filter(score -> score.getScore() != 0 && !score.getPlayerName().equals("$par")).sorted(Comparator.comparingInt(ScoreboardPlayerScore::getScore)).collect(Collectors.toList());
-        if (tunnel1Scores.size() > 0) builder.append("1: `").append(formatTime(tunnel1Scores.get(0).getScore())).append("` by ").append(tunnel1Scores.get(0).getPlayerName()).append("\\n");
-        if (tunnel1Scores.size() > 1) builder.append("2: `").append(formatTime(tunnel1Scores.get(1).getScore())).append("` by ").append(tunnel1Scores.get(1).getPlayerName()).append("\\n");
-        if (tunnel1Scores.size() > 2) builder.append("3: `").append(formatTime(tunnel1Scores.get(2).getScore())).append("` by ").append(tunnel1Scores.get(2).getPlayerName()).append("\\n");
+        for (var i = 0; i < tunnel1Scores.size(); i++) {
+            var score = tunnel1Scores.get(i);
+            builder.append(i + 1).append(": `").append(formatTime(score.getScore())).append("` by ").append(score.getPlayerName()).append("\\n");
+        }
         builder.append("**Tunnel 2 Scores**\\n");
-        tunnel2Scores = tunnel2Scores.stream().filter(score -> score.getScore() != 0 && !score.getPlayerName().equals("$par")).sorted(Comparator.comparingInt(ScoreboardPlayerScore::getScore)).collect(Collectors.toList());
-        if (tunnel2Scores.size() > 0) builder.append("1: `").append(formatTime(tunnel2Scores.get(0).getScore())).append("` by ").append(tunnel2Scores.get(0).getPlayerName()).append("\\n");
-        if (tunnel2Scores.size() > 1) builder.append("2: `").append(formatTime(tunnel2Scores.get(1).getScore())).append("` by ").append(tunnel2Scores.get(1).getPlayerName()).append("\\n");
-        if (tunnel2Scores.size() > 2) builder.append("3: `").append(formatTime(tunnel2Scores.get(2).getScore())).append("` by ").append(tunnel2Scores.get(2).getPlayerName()).append("\\n");
+        for (var i = 0; i < tunnel2Scores.size(); i++) {
+            var score = tunnel2Scores.get(i);
+            builder.append(i + 1).append(": `").append(formatTime(score.getScore())).append("` by ").append(score.getPlayerName()).append("\\n");
+        }
         builder.append("**Tunnel 3 Scores**\\n");
-        tunnel3Scores = tunnel3Scores.stream().filter(score -> score.getScore() != 0 && !score.getPlayerName().equals("$par")).sorted(Comparator.comparingInt(ScoreboardPlayerScore::getScore)).collect(Collectors.toList());
-        if (tunnel3Scores.size() > 0) builder.append("1: `").append(formatTime(tunnel3Scores.get(0).getScore())).append("` by ").append(tunnel3Scores.get(0).getPlayerName()).append("\\n");
-        if (tunnel3Scores.size() > 1) builder.append("2: `").append(formatTime(tunnel3Scores.get(1).getScore())).append("` by ").append(tunnel3Scores.get(1).getPlayerName()).append("\\n");
-        if (tunnel3Scores.size() > 2) builder.append("3: `").append(formatTime(tunnel3Scores.get(2).getScore())).append("` by ").append(tunnel3Scores.get(2).getPlayerName()).append("\\n");
+        for (var i = 0; i < tunnel3Scores.size(); i++) {
+            var score = tunnel3Scores.get(i);
+            builder.append(i + 1).append(": `").append(formatTime(score.getScore())).append("` by ").append(score.getPlayerName()).append("\\n");
+        }
         builder.append("**Frozen Tunnel Scores**\\n");
-        tunnel4Scores = tunnel4Scores.stream().filter(score -> score.getScore() != 0 && !score.getPlayerName().equals("$par")).sorted(Comparator.comparingInt(ScoreboardPlayerScore::getScore)).collect(Collectors.toList());
-        if (tunnel4Scores.size() > 0) builder.append("1: `").append(formatTime(tunnel4Scores.get(0).getScore())).append("` by ").append(tunnel4Scores.get(0).getPlayerName()).append("\\n");
-        if (tunnel4Scores.size() > 1) builder.append("2: `").append(formatTime(tunnel4Scores.get(1).getScore())).append("` by ").append(tunnel4Scores.get(1).getPlayerName()).append("\\n");
-        if (tunnel4Scores.size() > 2) builder.append("3: `").append(formatTime(tunnel4Scores.get(2).getScore())).append("` by ").append(tunnel4Scores.get(2).getPlayerName()).append("\\n");
+        for (var i = 0; i < tunnel4Scores.size(); i++) {
+            var score = tunnel4Scores.get(i);
+            builder.append(i + 1).append(": `").append(formatTime(score.getScore())).append("` by ").append(score.getPlayerName()).append("\\n");
+        }
         builder.append("**Full Run Scores**\\n");
-        tunnelallScores = tunnelallScores.stream().filter(score -> score.getScore() != 0 && !score.getPlayerName().equals("$par")).sorted(Comparator.comparingInt(ScoreboardPlayerScore::getScore)).collect(Collectors.toList());
-        if (tunnelallScores.size() > 0) builder.append("1: `").append(formatTime(tunnelallScores.get(0).getScore())).append("` by ").append(tunnelallScores.get(0).getPlayerName()).append("\\n");
-        if (tunnelallScores.size() > 1) builder.append("2: `").append(formatTime(tunnelallScores.get(1).getScore())).append("` by ").append(tunnelallScores.get(1).getPlayerName()).append("\\n");
-        if (tunnelallScores.size() > 2) builder.append("3: `").append(formatTime(tunnelallScores.get(2).getScore())).append("` by ").append(tunnelallScores.get(2).getPlayerName()).append("\\n");
+        for (var i = 0; i < tunnelallScores.size(); i++) {
+            var score = tunnelallScores.get(i);
+            builder.append(i + 1).append(": `").append(formatTime(score.getScore())).append("` by ").append(score.getPlayerName()).append("\\n");
+        }
 
         return builder.toString();
     }
