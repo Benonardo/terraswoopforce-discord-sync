@@ -52,38 +52,36 @@ public class TSFDiscordSync implements DedicatedServerModInitializer {
         if (messageID == null) {
             sendMessage(scoreboard);
         } else {
-            try {
-                var client = HttpClient.newHttpClient();
-                var request = HttpRequest.newBuilder()
-                        .uri(URI.create(webhookURL + "/messages/" + messageID))
-                        .method("PATCH", HttpRequest.BodyPublishers.ofString("{\"content\": \"" + getMessage(scoreboard) + "\"}"))
-                        .header("Content-Type", "application/json")
-                        .build();
-                var response = client.send(request, HttpResponse.BodyHandlers.ofString());
-                if (response.statusCode() > 299) {
+            var client = HttpClient.newHttpClient();
+            var request = HttpRequest.newBuilder()
+                    .uri(URI.create(webhookURL + "/messages/" + messageID))
+                    .method("PATCH", HttpRequest.BodyPublishers.ofString("{\"content\": \"" + getMessage(scoreboard) + "\"}"))
+                    .header("Content-Type", "application/json")
+                    .build();
+            client.sendAsync(request, HttpResponse.BodyHandlers.ofString()).whenComplete((response, throwable) -> {
+                if (throwable != null) {
+                    throwable.printStackTrace();
+                } else if (response.statusCode() > 299) {
                     System.out.println(response.body());
                 }
-            } catch (IOException | InterruptedException e) {
-                e.printStackTrace();
-            }
+            });
         }
     }
 
     private static void sendMessage(Scoreboard scoreboard) {
-        try {
-            var client = HttpClient.newHttpClient();
-            var request = HttpRequest.newBuilder()
-                            .uri(URI.create(webhookURL))
-                            .method("POST", HttpRequest.BodyPublishers.ofString("{\"content\": \"" + getMessage(scoreboard) + "\"}"))
-                            .header("Content-Type", "application/json")
-                            .build();
-            var response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            if (response.statusCode() > 299) {
+        var client = HttpClient.newHttpClient();
+        var request = HttpRequest.newBuilder()
+                        .uri(URI.create(webhookURL))
+                        .method("POST", HttpRequest.BodyPublishers.ofString("{\"content\": \"" + getMessage(scoreboard) + "\"}"))
+                        .header("Content-Type", "application/json")
+                        .build();
+        client.sendAsync(request, HttpResponse.BodyHandlers.ofString()).whenComplete((response, throwable) -> {
+            if (throwable != null) {
+                throwable.printStackTrace();
+            } else if (response.statusCode() > 299) {
                 System.out.println(response.body());
             }
-        } catch (IOException | InterruptedException e) {
-            e.printStackTrace();
-        }
+        });
     }
 
     private static String formatTime(int score) {
