@@ -25,9 +25,14 @@ public class ScoreboardPlayerScoreMixin {
     @Shadow @Final private String playerName;
 
     @Inject(method = "setScore", at = @At("HEAD"))
-    private void updateLeaderboardOnScoreChange(int score, CallbackInfo ci) {
+    private void checkForRecordOnScoreChange(int score, CallbackInfo ci) {
         if (TSFDiscordSync.server == null || score == 0 || this.objective == null || !(this.objective.getName().equals("tunnel1_best") || this.objective.getName().equals("tunnel2_best") || this.objective.getName().equals("tunnel3_best") || this.objective.getName().equals("tunnel4_best") || this.objective.getName().equals("tunnelall_best"))) return;
         TSFDiscordSync.checkForHighScore(score, this.playerName, this.scoreboard, this.objective);
+    }
+
+    @Inject(method = "setScore", at = @At("TAIL"))
+    private void updateLeaderboardOnScoreChange(int score, CallbackInfo ci) {
+        if (TSFDiscordSync.server == null || score == 0 || this.objective == null || !(this.objective.getName().equals("tunnel1_best") || this.objective.getName().equals("tunnel2_best") || this.objective.getName().equals("tunnel3_best") || this.objective.getName().equals("tunnel4_best") || this.objective.getName().equals("tunnelall_best"))) return;
         TSFDiscordSync.updateLeaderboardMessage(this.scoreboard);
     }
 
