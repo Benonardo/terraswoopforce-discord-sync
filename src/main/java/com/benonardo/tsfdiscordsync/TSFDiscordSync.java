@@ -40,9 +40,7 @@ public class TSFDiscordSync implements DedicatedServerModInitializer {
 
         ServerLifecycleEvents.SERVER_STARTED.register(server -> TSFDiscordSync.server = server);
 
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
-           UpdateLeaderboardCommand.register(dispatcher);
-        });
+        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> UpdateLeaderboardCommand.register(dispatcher));
     }
 
     public static void checkForHighScore(int newScore, String player, Scoreboard scoreboard, ScoreboardObjective objective) {
@@ -53,16 +51,15 @@ public class TSFDiscordSync implements DedicatedServerModInitializer {
                 .get()
                 .filter(oldScore -> oldScore.getScore() > newScore)
                 .findFirst();
-        if (higherScore.isPresent()) return;
         var previousHighScore = oldScores
                 .get()
                 .max(Comparator.comparingInt(ScoreboardPlayerScore::getScore));
         if (previousHighScore.isEmpty()) {
             sendWebhookMessage(highScoreWebhookURL, player + " has gotten the first record in " + formatTunnel(objective.getName()) + " with a time of `" + formatTime(newScore) + '`');
-        } else if (previousHighScore.get().getPlayerName().equals(player)) {
+        } else if (higherScore.isPresent()) {
             sendWebhookMessage(highScoreWebhookURL, player + " has beaten his previous record in " + formatTunnel(objective.getName()) + " with a time of `" + formatTime(newScore) + '`');
         } else  {
-            sendWebhookMessage(highScoreWebhookURL, player + " has beaten " + previousHighScore.get().getPlayerName() + "'s record in " + formatTunnel(objective.getName()) + " with a time of `" + formatTime(newScore) + '`');
+            sendWebhookMessage(highScoreWebhookURL, player + " has beaten " + previousHighScore.get().getPlayerName() + "'s high score in " + formatTunnel(objective.getName()) + " with a time of `" + formatTime(newScore) + '`');
         }
     }
 
@@ -147,7 +144,7 @@ public class TSFDiscordSync implements DedicatedServerModInitializer {
     }
 
     private static List<ScoreboardPlayerScore> getScores(Scoreboard scoreboard, String objective) {
-        return scoreboard.getAllPlayerScores(scoreboard.getNullableObjective("tunnel1_best"))
+        return scoreboard.getAllPlayerScores(scoreboard.getNullableObjective(objective))
                 .stream()
                 .filter(score -> score.getScore() != 0 && !score.getPlayerName().equals("$par"))
                 .sorted(Comparator.comparingInt(ScoreboardPlayerScore::getScore))
