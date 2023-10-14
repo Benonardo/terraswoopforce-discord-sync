@@ -22,10 +22,13 @@ public class ScoreboardPlayerScoreMixin {
     @Nullable
     private @Final ScoreboardObjective objective;
 
-    @Inject(method = "setScore", at = @At("TAIL"))
+    @Shadow @Final private String playerName;
+
+    @Inject(method = "setScore", at = @At("HEAD"))
     private void updateLeaderboardOnScoreChange(int score, CallbackInfo ci) {
         if (TSFDiscordSync.server == null || score == 0 || this.objective == null || !(this.objective.getName().equals("tunnel1_best") || this.objective.getName().equals("tunnel2_best") || this.objective.getName().equals("tunnel3_best") || this.objective.getName().equals("tunnel4_best") || this.objective.getName().equals("tunnelall_best"))) return;
-        TSFDiscordSync.updateMessage(this.scoreboard);
+        TSFDiscordSync.checkForHighScore(score, this.playerName, this.scoreboard, this.objective);
+        TSFDiscordSync.updateLeaderboardMessage(this.scoreboard);
     }
 
 }
