@@ -57,7 +57,7 @@ public class TSFDiscordSync implements DedicatedServerModInitializer {
         if (previousHighScore.isEmpty()) {
             sendWebhookMessage(highScoreWebhookURL, player + " has gotten the first record in " + formatTunnel(objective.getName()) + " with a time of `" + formatTime(newScore) + '`');
         } else if (higherScore.isPresent()) {
-            sendWebhookMessage(highScoreWebhookURL, player + " has beaten his previous record in " + formatTunnel(objective.getName()) + " with a time of `" + formatTime(newScore) + '`');
+            sendWebhookMessage(highScoreWebhookURL, player + " has beaten their previous record in " + formatTunnel(objective.getName()) + " with a time of `" + formatTime(newScore) + '`');
         } else  {
             sendWebhookMessage(highScoreWebhookURL, player + " has beaten " + previousHighScore.get().getPlayerName() + "'s high score in " + formatTunnel(objective.getName()) + " with a time of `" + formatTime(newScore) + '`');
         }
